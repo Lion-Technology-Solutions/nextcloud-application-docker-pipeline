@@ -1,0 +1,58 @@
+pipeline {
+   tools {
+        maven 'maven3.9.6'
+    }
+    agent any
+    environment {
+        registry = "354281356452.dkr.ecr.us-east-1.amazonaws.com/class20-demo"
+    }
+   
+    stages {
+        stage('Cloning Git') {
+            steps {
+                checkout scmGit(branches: [[name: '*/nov18']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Lion-Technology-Solutions/liontech-online-library-web-app.git']])     
+            }
+        }
+      stage ('Build') {
+          steps {
+            sh 'mvn clean install'           
+            }
+      }
+    // Building Docker images
+    stage('Building image') {
+      steps{
+        script {
+          dockerImage = docker.build registry 
+          dockerImage.tag("$BUILD_NUMBER")
+        }
+      }
+    }
+   
+    // Uploading Docker images into AWS ECR
+    stage('Pushing to ECR') {
+     steps{  
+         script {
+                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 354281356452.dkr.ecr.us-east-1.amazonaws.com'
+                sh 'docker push 354281356452.dkr.ecr.us-east-1.amazonaws.com/class20-demo:$BUILD_NUMBER'
+         }
+        }
+      }
+        stage ('Helm Deploy') {
+          steps {
+            script {
+                sh "helm upgrade mtn --install bookstore  --namespace bookstore --set image.tag=$BUILD_NUMBER"
+                }
+            }
+        }
+
+        stage ('Helm List') {
+          steps {
+            script {
+                sh "helm list -A  "
+                }
+            }
+        }
+
+
+    }
+}
