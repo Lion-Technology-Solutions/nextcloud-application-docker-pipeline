@@ -40,7 +40,7 @@ pipeline {
         stage ('Helm Deploy') {
           steps {
             script {
-                sh "helm upgrade nextcloud --install nextcloud  --namespace app --set image.tag=$BUILD_NUMBER"
+                sh "helm upgrade nextcloud  --install mtn  --namespace app --set image.tag=$BUILD_NUMBER"
                 }
             }
         }
