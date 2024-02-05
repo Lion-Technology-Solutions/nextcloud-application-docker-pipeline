@@ -33,14 +33,14 @@ pipeline {
      steps{  
          script {
                 sh 'aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin 354281356452.dkr.ecr.ca-central-1.amazonaws.com'
-                sh  'docker push 354281356452.dkr.ecr.us-east-1.amazonaws.com/class21:$BUILD_NUMBER'
+                sh   'docker push 354281356452.dkr.ecr.us-east-1.amazonaws.com/class21:$BUILD_NUMBER'
          }
         }
       }
         stage ('Helm Deploy') {
           steps {
             script {
-                sh "helm upgrade mtn --install nextcloud  --namespace app --set image.tag=$BUILD_NUMBER"
+                sh "helm upgrade app1 --install nextcloud-app  --namespace apps --set image.tag=$BUILD_NUMBER"
                 }
             }
         }
