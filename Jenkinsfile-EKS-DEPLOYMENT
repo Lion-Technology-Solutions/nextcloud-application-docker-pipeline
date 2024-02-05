@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Cloning Git') {
             steps {
-                checkout scmGit(branches: [[name: '*/nov18']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Lion-Technology-Solutions/liontech-online-library-web-app.git']])     
+                checkout scmGit(branches: [[name: '*/class21']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Lion-Technology-Solutions/nextcloud-application-docker-pipeline.git']])
             }
         }
       stage ('Build') {
