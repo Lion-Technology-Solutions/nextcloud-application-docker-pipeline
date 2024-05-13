@@ -12,7 +12,7 @@ pipline{
         registry = "405200097880.dkr.ecr.us-east-1.amazonaws.com/april30"
     }
 
-stages {
+stage {
     stage('checkoutfromscm'){
         steps{
           checkout scmGit(branches: [[name: '*/april300']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Chidozieugwu/nextcloud-application-docker-pipeline.git']]) 
