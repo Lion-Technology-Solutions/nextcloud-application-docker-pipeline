@@ -1,0 +1,46 @@
+pipline{
+
+    tools{
+
+        maven  'maven3.9.6'
+    }
+
+    agent  any
+
+    environment  {
+
+        registry = "405200097880.dkr.ecr.us-east-1.amazonaws.com/april30"
+    }
+
+stages {
+    stage('checkoutfromscm'){
+        steps{
+          checkout scmGit(branches: [[name: '*/april300']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Lion-Technology-Solutions/nextcloud-application-docker-pipeline.git']])  
+        }
+    }
+
+    stage ('Build Image'){
+
+        steps{
+            script {
+                dockerImage = docker.build registry
+                dockerImage.tag("$BUILD_NUMBER")
+            }
+        }
+    }
+
+    stage('PUSH TO REGISTRY'){
+        steps {
+            script {
+                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 405200097880.dkr.ecr.us-east-1.amazonaws.com'
+                sh 'docker push 405200097880.dkr.ecr.us-east-1.amazonaws.com/april30:$BUILD_NUMBER'
+
+            }
+        }
+    }
+
+
+}
+
+
+}
