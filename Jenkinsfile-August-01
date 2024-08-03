@@ -6,7 +6,7 @@ pipeline{
   agent   any 
 
   environment{
-    registry =  "637423357206.dkr.ecr.us-east-1.amazonaws.com/class26-project2a"
+    registry =  "637423357206.dkr.ecr.us-east-1.amazonaws.com/demo"
   }
 
   stages{
@@ -30,7 +30,7 @@ pipeline{
       steps{
         script{
           sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 637423357206.dkr.ecr.us-east-1.amazonaws.com'
-          sh 'docker push 637423357206.dkr.ecr.us-east-1.amazonaws.com/class26-project2a:$BUILD_NUMBER'
+          sh 'docker push 637423357206.dkr.ecr.us-east-1.amazonaws.com/demo:$BUILD_NUMBER'
         }
       }
     }
