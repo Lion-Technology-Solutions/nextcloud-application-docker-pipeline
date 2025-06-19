@@ -22,24 +22,23 @@ pipeline {
             }
         }
         
-        stage ("Build Image") {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build registry
-                    dockerImage.tag("$BUILD_NUMBER")
+                    docker.build("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}")
                 }
             }
         }
         
-        stage ("Push to ECR") {
+        stage('Push to ECR') {
             steps {
                 script {
-                    sh 'aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin 757750585556.dkr.ecr.ca-central-1.amazonaws.com'
-                    sh 'docker push  757750585556.dkr.ecr.ca-central-1.amazonaws.com/myapps:$BUILD_NUMBER'
-                    
+                    docker.withRegistry("https://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com", 'ecr:ca-central-1:aws-credentials') {
+                        docker.image("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}").push()
+                    }
                 }
             }
-        } 
+        }
 
         stage('Configure kubectl') {
             steps {
