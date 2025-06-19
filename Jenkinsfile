@@ -30,7 +30,7 @@ pipeline {
             }
         }
         
-        stages {
+    stages {
         stage('Push to ECR') {
             steps {
                 withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
