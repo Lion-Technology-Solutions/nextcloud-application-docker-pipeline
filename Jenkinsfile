@@ -7,7 +7,13 @@ pipeline {
     agent any
 
     environment {
-        registry = "757750585556.dkr.ecr.us-east-1.amazonaws.com/class19demo"
+        AWS_ACCOUNT_ID = '123456789012'
+        AWS_REGION = 'ca-central-1'
+        ECR_REPOSITORY = 'myapps'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        CLUSTER_NAME = 'class30'
+        KUBE_CONFIG = credentials('eks-kubeconfig')
+        
     }
     stages {
         stage('Checkout') {
@@ -33,6 +39,34 @@ pipeline {
                     
                 }
             }
-        }    
+        } 
+
+        stage('Configure kubectl') {
+            steps {
+                sh """
+                mkdir -p ~/.kube
+                echo "${KUBE_CONFIG}" > ~/.kube/config
+                aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}
+                """
+            }
+        } 
+
+        stage('Deploy to EKS') {
+            steps {
+                sh """
+                # Update image tag in deployment.yaml
+                sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/deployment.yaml
+                
+                # Apply Kubernetes manifests
+                kubectl apply -f k8s/namespace.yaml
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+                
+                # Verify deployment
+                kubectl rollout status deployment/my-app -n my-namespace
+                """
+            }
+        }
+
     }
 }
