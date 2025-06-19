@@ -73,8 +73,6 @@ pipeline {
 
 
 
-###################
-
 
 // stages {
 //         stage('Push to ECR') {
