@@ -30,7 +30,7 @@ pipeline {
             }
         }
         
-    stages {
+    
         stage('Push to ECR') {
             steps {
                 withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
@@ -48,7 +48,7 @@ pipeline {
                     }
                 }
             }
-        }
+        
 }
 
         stage('Configure kubectl') {
