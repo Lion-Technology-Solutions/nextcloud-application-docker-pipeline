@@ -30,14 +30,26 @@ pipeline {
             }
         }
         
+        stages {
         stage('Push to ECR') {
             steps {
-                script {
-                    docker.withRegistry("https://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com", 'ecr:ca-central-1:aws-credentials') {
-                        docker.image("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}").push()
+                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+                    script {
+                        // Login to ECR
+                        sh """
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        """
+                        
+                        // Push the image
+                        docker.withRegistry("https://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com") {
+                            docker.image("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}").push()
+                        }
                     }
                 }
             }
+        }
+}
         }
 
         stage('Configure kubectl') {
@@ -69,3 +81,30 @@ pipeline {
 
     }
 }
+
+
+
+
+// ###################
+
+
+// stages {
+//         stage('Push to ECR') {
+//             steps {
+//                 withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+//                     script {
+//                         // Login to ECR
+//                         sh """
+//                         aws ecr get-login-password --region ${AWS_REGION} | \
+//                         docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+//                         """
+                        
+//                         // Push the image
+//                         docker.withRegistry("https://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com") {
+//                             docker.image("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}").push()
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+// }
