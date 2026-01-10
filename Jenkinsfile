@@ -9,7 +9,7 @@ pipeline {
     environment {
         AWS_ACCOUNT_ID = '768477844960'
         AWS_REGION = 'ca-central-1'
-        ECR_REPOSITORY = 'demo-app'
+        ECR_REPOSITORY = 'nextcloud'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         //CLUSTER_NAME = 'class30'
         //KUBE_CONFIG = credentials('eks-kubeconfig')
