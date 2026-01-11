@@ -7,81 +7,46 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = '768477844960'
-        AWS_REGION = 'ca-central-1'
-        ECR_REPOSITORY = 'nextcloud'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
-        //CLUSTER_NAME = 'class30'
-        //KUBE_CONFIG = credentials('eks-kubeconfig')
-        
+        registry = "768477844960.dkr.ecr.ca-central-1.amazonaws.com/nextcloud"
     }
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/Lion-Technology-Solutions/nextcloud-application-docker-pipeline.git'
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Lion-Technology-Solutions/nextcloud-application-docker-pipeline.git']])
             }
         }
         
-        stage('Build Docker Image') {
+        stage ("Build Image") {
             steps {
                 script {
-                    docker.build("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}")
+                    dockerImage = docker.build registry
+                    dockerImage.tag("$BUILD_NUMBER")
                 }
             }
         }
         
-    
-        stage('Push to ECR') {
+        stage ("Push to ECR") {
             steps {
-                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
-                    script {
-                        // Login to ECR
-                        sh """
-                        aws ecr get-login-password --region ${AWS_REGION} | \
-                        docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                        """
-                        
-                        // Push the image
-                        docker.withRegistry("https://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com") {
-                            docker.image("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}").push()
-                        }
-                    }
+                script {
+                    sh 'aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin 768477844960.dkr.ecr.ca-central-1.amazonaws.com'
+                    sh 'docker push 768477844960.dkr.ecr.ca-central-1.amazonaws.com/nextcloud:$BUILD_NUMBER'
+                    
                 }
             }
-        
-}
+        } 
 
-        // stage('Configure kubectl') {
-        //     steps {
-        //         sh """
-        //         mkdir -p ~/.kube
-        //         echo "${KUBE_CONFIG}" > ~/.kube/config
-        //         aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}
-        //         """
-        //     }
-        // } 
+        stage("list images") {
+            steps{
+                sh "docker images"
+                
+            }
+        }
+        // stage('notify teams channel'){
+        //     steps{
 
-        // stage('Deploy to EKS') {
-        //     steps {
-        //         sh """
-        //         # Update image tag in deployment.yaml
-        //         sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/deployment.yaml
-                
-        //         # Apply Kubernetes manifests
-        //         kubectl apply -f k8s/namespace.yaml
-        //         kubectl apply -f k8s/deployment.yaml
-        //         kubectl apply -f k8s/service.yaml
-                
-        //         # Verify deployment
-        //         kubectl rollout status deployment/my-app -n my-namespace
-        //         """
+        //        office365ConnectorSend message: 'Congratulations class20', webhookUrl: 'https://liontechacademy.webhook.office.com/webhookb2/1c45852e-99e7-4aa7-a7f5-be60526bb887@b290c85e-0692-4ada-8f25-2a3b60aca73e/JenkinsCI/38f55bedaf4142bc8366233b562335b3/90dc930a-1d3a-4c50-9c2d-39d010312f55' 
         //     }
         // }
-
+   
     }
 }
-
-
-
-
-
