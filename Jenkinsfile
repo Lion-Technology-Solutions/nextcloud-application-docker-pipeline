@@ -1,61 +1,87 @@
 pipeline {
-  agent any
 
-  environment {
-    AWS_ACCOUNT_ID = '768477844960'
-    AWS_REGION     = 'ca-central-1'
-    ECR_REPOSITORY = 'nextcloud'
-    IMAGE_TAG      = "${env.BUILD_NUMBER}"
-    ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-    IMAGE_URI      = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+    tools{
 
-    // If your ~/.aws/credentials uses a non-default profile, uncomment and set it:
-     AWS_PROFILE = 'default'
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/Lion-Technology-Solutions/nextcloud-application-docker-pipeline.git'
-      }
+        maven 'maven3.9.2'
     }
+    agent any
 
-    stage('Build Docker Image') {
-      steps {
-        sh '''
-        #!/bin/bash
-          set -euo pipefail
-          aws --version
-      aws sts get-caller-identity
-
-     aws ecr get-login-password --region "$AWS_REGION" \
-  | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-          docker version
-          docker build -t "$IMAGE_URI" .
-        '''
-      }
+    environment {
+        AWS_ACCOUNT_ID = '768477844960'
+        AWS_REGION = 'ca-central-1'
+        ECR_REPOSITORY = 'nextcloud'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        //CLUSTER_NAME = 'class30'
+        //KUBE_CONFIG = credentials('eks-kubeconfig')
+        
     }
-
-    stage('Login to ECR') {
-      steps {
-        sh '''
-          set -euo pipefail
-          aws --version
-          aws sts get-caller-identity
-
-          aws ecr get-login-password --region "$AWS_REGION" \
-            | docker login --username AWS --password-stdin "$ECR_REGISTRY"
-        '''
-      }
-    }
-
-    stage('Push to ECR') {
-      steps {
-        sh '''
-          set -euo pipefail
-          docker push "$IMAGE_URI"
-        '''
-      }
-    }
-  }
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/Lion-Technology-Solutions/nextcloud-application-docker-pipeline.git'
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}")
+                }
+            }
+        }
+        
+    
+        stage('Push to ECR') {
+            steps {
+                withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
+                    script {
+                        // Login to ECR
+                        sh """
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        """
+                        
+                        // Push the image
+                        docker.withRegistry("https://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com") {
+                            docker.image("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}").push()
+                        }
+                    }
+                }
+            }
+        
 }
+
+        // stage('Configure kubectl') {
+        //     steps {
+        //         sh """
+        //         mkdir -p ~/.kube
+        //         echo "${KUBE_CONFIG}" > ~/.kube/config
+        //         aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_REGION}
+        //         """
+        //     }
+        // } 
+
+        // stage('Deploy to EKS') {
+        //     steps {
+        //         sh """
+        //         # Update image tag in deployment.yaml
+        //         sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/deployment.yaml
+                
+        //         # Apply Kubernetes manifests
+        //         kubectl apply -f k8s/namespace.yaml
+        //         kubectl apply -f k8s/deployment.yaml
+        //         kubectl apply -f k8s/service.yaml
+                
+        //         # Verify deployment
+        //         kubectl rollout status deployment/my-app -n my-namespace
+        //         """
+        //     }
+        // }
+
+    }
+}
+
+
+
+
+
